@@ -99,7 +99,14 @@ footer{text-align:center;color:#888;font-size:12px;padding:18px}
   <label for="brush">Tamaño del borrador: <strong id="brushValue">25</strong> px</label>
   <input type="range" id="brush" min="5" max="100" value="25">
 
-  <div style="background:#eee;border-radius:10px;overflow:hidden;margin-top:12px">
+<div style="background-color:#fff;
+background-image:linear-gradient(45deg,#ccc 25%,transparent 25%),
+linear-gradient(-45deg,#ccc 25%,transparent 25%),
+linear-gradient(45deg,transparent 75%,#ccc 75%),
+linear-gradient(-45deg,transparent 75%,#ccc 75%);
+background-size:20px 20px;
+background-position:0 0,0 10px,10px -10px,-10px 0;
+border-radius:10px;overflow:hidden;margin-top:12px">
     <canvas id="eraseCanvas"
       style="width:100%;height:auto;display:block;touch-action:none;cursor:crosshair">
     </canvas>
