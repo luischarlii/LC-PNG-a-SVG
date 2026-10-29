@@ -96,6 +96,12 @@ footer{text-align:center;color:#888;font-size:12px;padding:18px}
   <h2>4. Borrador manual</h2>
   <p class="small">Pasa el dedo sobre las partes que deseas hacer transparentes.</p>
 
+<label for="brushMode">Herramienta de edición</label>
+<select id="brushMode">
+  <option value="erase">Borrador: eliminar partes</option>
+  <option value="restore">Restaurar: recuperar partes originales</option>
+</select>
+
   <label for="brush">Tamaño del borrador: <strong id="brushValue">25</strong> px</label>
   <input type="range" id="brush" min="5" max="100" value="25">
 
@@ -274,24 +280,39 @@ function getErasePosition(event) {
   };
 }
 
+
 function eraseAt(point) {
   const size = Number($("brush").value);
+  const mode = $("brushMode").value;
+
   eraseCtx.save();
-  eraseCtx.globalCompositeOperation = "destination-out";
   eraseCtx.lineCap = "round";
   eraseCtx.lineJoin = "round";
   eraseCtx.lineWidth = size;
+
   eraseCtx.beginPath();
 
   if (lastErasePoint) {
     eraseCtx.moveTo(lastErasePoint.x, lastErasePoint.y);
     eraseCtx.lineTo(point.x, point.y);
   } else {
-    eraseCtx.moveTo(point.x, point.y);
-    eraseCtx.lineTo(point.x + 0.1, point.y);
+    eraseCtx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
   }
 
-  eraseCtx.stroke();
+  if (mode === "erase") {
+    eraseCtx.globalCompositeOperation = "destination-out";
+    eraseCtx.stroke();
+  } else {
+    eraseCtx.clip();
+    eraseCtx.globalCompositeOperation = "source-over";
+    eraseCtx.drawImage(
+      sourceImage,
+      0, 0,
+      eraseCanvas.width,
+      eraseCanvas.height
+    );
+  }
+
   eraseCtx.restore();
   lastErasePoint = point;
 }
