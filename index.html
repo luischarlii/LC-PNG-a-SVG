@@ -156,43 +156,7 @@ style="width:100%;overflow:hidden;position:relative;touch-action:none;cursor:gra
 
 <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.js"></script>
 <script>
-const $ = id => document.getElementById(id);
-let sourceImage = null;
-let sourceDataUrl = "";
-let outputUrl = "";
-
-$("colors").addEventListener("input", () => $("colorsValue").textContent = $("colors").value);
-$("detail").addEventListener("input", () => $("detailValue").textContent = $("detail").value);
-$("smooth").addEventListener("input", () => $("smoothValue").textContent = $("smooth").value);
-
-$("file").addEventListener("change", () => {
-  const file = $("file").files[0];
-  if (!file) return;
-  if (!file.type.startsWith("image/")) {
-    $("status").textContent = "Selecciona un archivo de imagen válido.";
-    return;
-  }
-  if (file.size > 15 * 1024 * 1024) {
-    $("status").textContent = "La imagen supera 15 MB. Elige una imagen más pequeña.";
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = () => {
-    sourceDataUrl = reader.result;
-    sourceImage = new Image();
-    sourceImage.onload = () => {
-  $("preview").replaceChildren(sourceImage);
-  initializeEraser(sourceImage);
-      $("convert").disabled = false;
-      $("download").disabled = true;
-      $("status").textContent = "Imagen cargada: " + sourceImage.naturalWidth + " × " + sourceImage.naturalHeight + " px.";
-    };
-    sourceImage.onerror = () => $("status").textContent = "No se pudo abrir la imagen.";
-    sourceImage.src = sourceDataUrl;
-  };
-  reader.readAsDataURL(file);
-});
-
+p
 $("tolerance").addEventListener("input", () => {
   $("toleranceValue").textContent = $("tolerance").value;
 });
@@ -726,11 +690,30 @@ $("download").addEventListener("click", () => {
 
 $("reset").addEventListener("click", () => {
   if (outputUrl) URL.revokeObjectURL(outputUrl);
+
   outputUrl = "";
   sourceImage = null;
   sourceDataUrl = "";
+
   $("file").value = "";
-  $("preview").innerHTML = '<span style="color:#333">Selecciona una imagen</span>';
+
+  $("preview").replaceChildren(
+    Object.assign(document.createElement("span"), {
+      textContent: "Selecciona una imagen",
+      style: "color:#333"
+    })
+  );
+
+  // Limpiar el lienzo del borrador manual
+  if ($("eraseCanvas")) {
+    const ctx = $("eraseCanvas").getContext("2d");
+    ctx.clearRect(0, 0, $("eraseCanvas").width, $("eraseCanvas").height);
+  }
+
+  // Limpiar resultados y SVG anterior
+  if ($("result")) $("result").replaceChildren();
+  if ($("svgPreview")) $("svgPreview").replaceChildren();
+
   $("status").textContent = "Esperando imagen.";
   $("convert").disabled = true;
   $("download").disabled = true;
