@@ -90,6 +90,18 @@ footer{text-align:center;color:#888;font-size:12px;padding:18px}
     <div class="preview" id="preview"><span style="color:#333">Selecciona una imagen</span></div>
     <div id="status" role="status">Esperando imagen.</div>
     <button class="primary" id="download" disabled>Descargar archivo SVG</button>
+<div class="panel">
+  <label for="pngScale">Resolución del PNG</label>
+  <select id="pngScale">
+    <option value="1">1× — Tamaño original</option>
+    <option value="2" selected>2× — Alta resolución</option>
+    <option value="4">4× — Máxima resolución</option>
+  </select>
+
+  <button class="primary" id="downloadPNG" disabled>
+    Descargar PNG transparente
+  </button>
+</div>
     <button class="secondary" id="reset">Limpiar y comenzar de nuevo</button>
 
 <div class="panel">
@@ -184,6 +196,7 @@ $("file").addEventListener("change", () => {
   $("preview").replaceChildren(sourceImage);
   initializeEraser(sourceImage);
       $("convert").disabled = false;
+$("downloadPNG").disabled = false;
       $("download").disabled = true;
       $("status").textContent = "Imagen cargada: " + sourceImage.naturalWidth + " × " + sourceImage.naturalHeight + " px.";
     };
@@ -634,7 +647,49 @@ $("openProject").addEventListener("change", event => {
 
   reader.readAsText(file);
 });
+$("downloadPNG").addEventListener("click", () => {
+  if (!sourceImage || !$("eraseCanvas").width) {
+    $("status").textContent = "Primero carga una imagen.";
+    return;
+  }
 
+  const scale = Number($("pngScale").value);
+  const canvas = document.createElement("canvas");
+
+  canvas.width = $("eraseCanvas").width * scale;
+  canvas.height = $("eraseCanvas").height * scale;
+
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  ctx.drawImage(
+    $("eraseCanvas"),
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  canvas.toBlob(blob => {
+    if (!blob) {
+      $("status").textContent = "No se pudo generar el PNG.";
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "LC-Logo-Transparente-" + scale + "x.png";
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    $("status").textContent =
+      "PNG transparente exportado a resolución " + scale + "×.";
+  }, "image/png");
+});
 function cleanSvg(svg) {
   if (!$("white").checked) return svg;
   const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
@@ -734,6 +789,7 @@ $("reset").addEventListener("click", () => {
   $("status").textContent = "Esperando imagen.";
   $("convert").disabled = true;
   $("download").disabled = true;
+$("downloadPNG").disabled = true;
 });
 </script>
 </body>
