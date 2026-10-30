@@ -3,7 +3,7 @@
   "id": "./",
   "name": "LC PNG a SVG",
   "short_name": "Convertidor png",
-  "description": "Generador de prompts para imágenes, videos y animaciones con inteligencia artificial.",
+  "description": "Convierte tus imagenes en png y svg.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
