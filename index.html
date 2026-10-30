@@ -135,6 +135,18 @@ style="width:100%;overflow:hidden;position:relative;touch-action:none;cursor:gra
 
   <button class="secondary" id="undoErase">Deshacer último borrado</button>
   <button class="secondary" id="restoreErase">Restaurar imagen original</button>
+
+<button class="primary" id="saveProject">
+  Guardar proyecto LC
+</button>
+
+<label for="openProject">Abrir proyecto guardado</label>
+<input id="openProject" type="file" accept=".lcsvg,application/json">
+
+<p class="small">
+  Guarda tu trabajo para continuar editándolo posteriormente.
+</p>
+
   <p class="small">Los cambios manuales se aplicarán al resultado SVG cuando conectemos el lienzo con la conversión.</p>
 </div>
 
@@ -464,6 +476,164 @@ zoomViewport.addEventListener("pointerup", endZoomTouch);
 zoomViewport.addEventListener("pointercancel", endZoomTouch);
 
 updateZoom();
+
+// GUARDAR PROYECTO LC
+$("saveProject").addEventListener("click", () => {
+  if (!sourceImage || !eraseCanvas.width) {
+    $("status").textContent = "Primero selecciona una imagen.";
+    return;
+  }
+
+  try {
+    const project = {
+      app: "LC PNG a SVG",
+      version: 1,
+      original: sourceDataUrl,
+      edited: eraseCanvas.toDataURL("image/png"),
+      settings: {
+        brush: $("brush").value,
+        brushMode: $("brushMode").value,
+        zoom: zoomScale,
+        bgColor: $("bgColor").value,
+        tolerance: $("tolerance").value,
+        colors: $("colors").value,
+        detail: $("detail").value,
+        smooth: $("smooth").value,
+        white: $("white").checked
+      }
+    };
+
+    const blob = new Blob(
+      [JSON.stringify(project)],
+      {type: "application/json"}
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "LC-Proyecto.lcsvg";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+    $("status").textContent =
+      "Proyecto guardado. Busca LC-Proyecto.lcsvg en Archivos o Descargas.";
+  } catch (error) {
+    $("status").textContent =
+      "No se pudo guardar el proyecto: " + error.message;
+  }
+});
+
+// ABRIR PROYECTO LC
+$("openProject").addEventListener("change", event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    try {
+      const project = JSON.parse(reader.result);
+
+      if (
+        project.app !== "LC PNG a SVG" ||
+        project.version !== 1 ||
+        typeof project.original !== "string" ||
+        typeof project.edited !== "string"
+      ) {
+        throw new Error("El archivo no es un proyecto LC válido.");
+      }
+
+      const original = new Image();
+
+      original.onload = () => {
+        sourceImage = original;
+        sourceDataUrl = project.original;
+
+        initializeEraser(original);
+
+        const edited = new Image();
+
+        edited.onload = () => {
+          if (
+            edited.naturalWidth !== eraseCanvas.width ||
+            edited.naturalHeight !== eraseCanvas.height
+          ) {
+            $("status").textContent =
+              "Las dimensiones del proyecto no coinciden.";
+            return;
+          }
+
+          eraseCtx.clearRect(
+            0, 0, eraseCanvas.width, eraseCanvas.height
+          );
+
+          eraseCtx.drawImage(edited, 0, 0);
+
+          $("preview").replaceChildren(original);
+          $("convert").disabled = false;
+          $("download").disabled = true;
+
+          const s = project.settings || {};
+
+          $("brush").value = s.brush || 25;
+          $("brushValue").textContent = $("brush").value;
+
+          $("brushMode").value = s.brushMode || "erase";
+
+          $("bgColor").value = s.bgColor || "#ffffff";
+          $("tolerance").value = s.tolerance || 35;
+          $("toleranceValue").textContent = $("tolerance").value;
+
+          $("colors").value = s.colors || 16;
+          $("colorsValue").textContent = $("colors").value;
+
+          $("detail").value = s.detail || 2;
+          $("detailValue").textContent = $("detail").value;
+
+          $("smooth").value = s.smooth || 1;
+          $("smoothValue").textContent = $("smooth").value;
+
+          $("white").checked = !!s.white;
+
+          if (typeof s.zoom === "number") {
+            zoomScale = Math.max(1, Math.min(5, s.zoom));
+            zoomX = 0;
+            zoomY = 0;
+            updateZoom();
+          }
+
+          eraseHistory = [];
+          saveEraseHistory();
+
+          $("status").textContent =
+            "Proyecto LC abierto correctamente. Puedes continuar editando.";
+        };
+
+        edited.onerror = () => {
+          $("status").textContent = "No se pudo recuperar la imagen editada.";
+        };
+
+        edited.src = project.edited;
+      };
+
+      original.onerror = () => {
+        $("status").textContent = "No se pudo recuperar la imagen original.";
+      };
+
+      original.src = project.original;
+
+    } catch (error) {
+      $("status").textContent = "Error al abrir el proyecto: " + error.message;
+    }
+  };
+
+  reader.readAsText(file);
+});
 
 function cleanSvg(svg) {
   if (!$("white").checked) return svg;
