@@ -1,8 +1,8 @@
 
 {
   "id": "./",
-  "name": "LC Prompt Studio",
-  "short_name": "LC Prompt Studio",
+  "name": "LC PNG a SVG",
+  "short_name": "Convertidor png",
   "description": "Generador de prompts para imágenes, videos y animaciones con inteligencia artificial.",
   "start_url": "./",
   "scope": "./",
